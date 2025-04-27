@@ -63,3 +63,7 @@ slack-sdk>=3.21.0
 
 # Added from the code block
 fake-useragent>=1.1.0
+
+#LLM API
+langchain
+langchain-google-genai

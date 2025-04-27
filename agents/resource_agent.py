@@ -29,7 +29,7 @@ class ResourceAgent:
         self.kaggle_api = None
         self.github_api = None
         self._initialize_apis()
-        self._initialize_models()
+        #self._initialize_models()
 
     def _initialize_apis(self):
         """

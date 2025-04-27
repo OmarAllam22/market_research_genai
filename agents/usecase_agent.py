@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer, util
 import torch
 import numpy as np
 import re
-from ollama import Client
+import ollama
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -22,13 +22,10 @@ REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
 redis_pool = redis.ConnectionPool.from_url(REDIS_URL)
 r = redis.Redis(connection_pool=redis_pool)
 
-# Initialize Ollama client
-ollama_client = Client(host='http://localhost:11434')
-
 class UsecaseAgent:
     def __init__(self):
         self.cache_ttl = 86400  # 24 hours
-        self._initialize_models()
+        #self._initialize_models()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def _initialize_models(self):
@@ -43,12 +40,12 @@ class UsecaseAgent:
             logger.error(f"Error initializing ML models: {str(e)}")
             raise
 
-    async def _call_ollama(self, prompt: str, temperature: float = 0.7, max_tokens: int = 1000) -> str:
+    async def _call_ollama(self, prompt: str) -> str:
         """
         Call Ollama with the local DeepSeek model.
         """
         try:
-            response = ollama_client.generate(
+            response = ollama.generate(
                 model='deepseek-r1',
                 prompt=prompt
             )
@@ -99,7 +96,7 @@ class UsecaseAgent:
         try:
             # Prepare prompt
             prompt = f"""
-            Based on the following industry research, generate 3 innovative AI and Generative AI use cases in JSON format:
+            Based on the following industry research, generate 5 innovative AI and Generative AI use cases in JSON format:
             
             Industry: {industry_research['industry']}
             Segment: {industry_research['segment']}

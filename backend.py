@@ -4,6 +4,9 @@ from pydantic import BaseModel
 from agents import research_agent, usecase_agent, resource_agent, validation_agent
 import asyncio
 import logging
+import redis
+from typing import Dict, List, Optional
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,8 +23,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Increase timeout settings
-TIMEOUT = 300  # 5 minutes
+# Timeout settings
+RESEARCH_TIMEOUT = 180  # 3 minutes
+USECASE_TIMEOUT = 120   # 2 minutes
+RESOURCE_TIMEOUT = 120  # 2 minutes
+VALIDATION_TIMEOUT = 60 # 1 minute
+
+# Redis connection
+try:
+    redis_client = redis.Redis(
+        host=os.getenv('REDIS_HOST', 'localhost'),
+        port=int(os.getenv('REDIS_PORT', 6379)),
+        db=int(os.getenv('REDIS_DB', 0)),
+        decode_responses=True
+    )
+    redis_client.ping()  # Test connection
+except redis.ConnectionError as e:
+    logger.error(f"Redis connection failed: {str(e)}")
+    redis_client = None
 
 class ResearchRequest(BaseModel):
     company_or_industry_name: str
@@ -44,12 +63,20 @@ class FullPipelineRequest(BaseModel):
     company_or_industry_name: str
     user_name: str = "User"
 
+async def _handle_timeout(operation: str, timeout: int):
+    """Handle timeout for operations"""
+    try:
+        await asyncio.sleep(timeout)
+        raise asyncio.TimeoutError(f"{operation} operation timed out after {timeout} seconds")
+    except asyncio.CancelledError:
+        pass
+
 @app.post("/research")
 async def research(req: ResearchRequest):
     try:
         result = await asyncio.wait_for(
             research_agent.run(req.company_or_industry_name),
-            timeout=TIMEOUT
+            timeout=RESEARCH_TIMEOUT
         )
         return {"result": result}
     except asyncio.TimeoutError:
@@ -63,7 +90,7 @@ async def usecases(req: UseCaseRequest):
     try:
         result = await asyncio.wait_for(
             usecase_agent.run(req.industry_info),
-            timeout=TIMEOUT
+            timeout=USECASE_TIMEOUT
         )
         return {"result": result}
     except asyncio.TimeoutError:
@@ -77,7 +104,7 @@ async def resources(req: ResourceRequest):
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(resource_agent.run, req.usecases),
-            timeout=TIMEOUT
+            timeout=RESOURCE_TIMEOUT
         )
         return {"result": result}
     except asyncio.TimeoutError:
@@ -91,7 +118,7 @@ async def validate(req: ValidateRequest):
     try:
         result = await asyncio.wait_for(
             asyncio.to_thread(validation_agent.run, req.usecases, req.resources, req.user_name),
-            timeout=TIMEOUT
+            timeout=VALIDATION_TIMEOUT
         )
         return {"result": result}
     except asyncio.TimeoutError:
@@ -103,35 +130,59 @@ async def validate(req: ValidateRequest):
 @app.post("/full_pipeline")
 async def full_pipeline(req: FullPipelineRequest):
     try:
-        # Run all operations with timeout
-        industry_info = await asyncio.wait_for(
-            research_agent.run(req.company_or_industry_name),
-            timeout=TIMEOUT
-        )
-        
-        usecases = await asyncio.wait_for(
-            usecase_agent.run(industry_info),
-            timeout=TIMEOUT
-        )
-        
-        resources = await asyncio.wait_for(
-            asyncio.to_thread(resource_agent.run, usecases),
-            timeout=TIMEOUT
-        )
-        
-        validated = await asyncio.wait_for(
-            asyncio.to_thread(validation_agent.run, usecases, resources, user_name=req.user_name),
-            timeout=TIMEOUT
-        )
-        
+        # Run all operations with timeout and error handling
+        results = {}
+        errors = {}
+
+        # Research phase
+        try:
+            results['industry_info'] = await asyncio.wait_for(
+                research_agent.run(req.company_or_industry_name),
+                timeout=RESEARCH_TIMEOUT
+            )
+        except Exception as e:
+            errors['research'] = str(e)
+            results['industry_info'] = None
+
+        # Use case phase
+        if results['industry_info']:
+            try:
+                results['usecases'] = await asyncio.wait_for(
+                    usecase_agent.run(results['industry_info']),
+                    timeout=USECASE_TIMEOUT
+                )
+            except Exception as e:
+                errors['usecases'] = str(e)
+                results['usecases'] = None
+
+        # Resource phase
+        if results.get('usecases'):
+            try:
+                results['resources'] = await asyncio.wait_for(
+                    asyncio.to_thread(resource_agent.run, results['usecases']),
+                    timeout=RESOURCE_TIMEOUT
+                )
+            except Exception as e:
+                errors['resources'] = str(e)
+                results['resources'] = None
+
+        # Validation phase
+        if results.get('usecases') and results.get('resources'):
+            try:
+                results['validated'] = await asyncio.wait_for(
+                    asyncio.to_thread(validation_agent.run, results['usecases'], results['resources'], req.user_name),
+                    timeout=VALIDATION_TIMEOUT
+                )
+            except Exception as e:
+                errors['validation'] = str(e)
+                results['validated'] = None
+
+        # Return results with any errors
         return {
-            "industry_info": industry_info,
-            "usecases": usecases,
-            "resources": resources,
-            "validated": validated
+            "results": results,
+            "errors": errors if errors else None
         }
-    except asyncio.TimeoutError:
-        raise HTTPException(status_code=504, detail="Pipeline operation timed out")
+
     except Exception as e:
         logger.error(f"Error in full pipeline: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 
