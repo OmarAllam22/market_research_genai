@@ -1,7 +1,7 @@
 # Market Research & Use Case Generation Agent
 ## Technical Report
 
-![System Architecture](architecture.png)
+![System Architecture](https://www.mermaidchart.com/raw/3fb3fb78-1fa8-4e9a-9465-251fdd1c6a24?theme=light&version=v0.1&format=svg)
 
 ## Table of Contents
 1. [System Architecture](#1-system-architecture)
