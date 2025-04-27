@@ -1,9 +1,8 @@
-# Market Research & Use Case Generation Agent
-## Technical Report
-
+# Technical Report for Market Research & Use Case Generation Agent
+# Flowchart:
 ![System Architecture](https://www.mermaidchart.com/raw/3fb3fb78-1fa8-4e9a-9465-251fdd1c6a24?theme=light&version=v0.1&format=svg)
 
-## Table of Contents
+# Table of Contents
 1. [System Architecture](#1-system-architecture)
 2. [Key Technical Features](#2-key-technical-features)
 3. [Technical Advantages](#3-technical-advantages)
@@ -11,7 +10,7 @@
 5. [Competitive Advantages](#5-competitive-advantages)
 6. [Future Enhancements](#6-future-enhancements)
 
-## 1. System Architecture
+## <font color=red>1. System Architecture</font>
 
 The system implements a multi-agent architecture with the following key components:
 
@@ -38,13 +37,9 @@ The system implements a multi-agent architecture with the following key componen
    - Performance metrics
 
 ### System Flow:
-1. User input → Research Agent
-2. Research results → Use Case Agent
-3. Use cases → Resource Agent
-4. Resources → Validation Agent
-5. Final results → User interface
+![system flow](https://www.mermaidchart.com/raw/1ba04b2f-fc4b-4f30-a149-c8960910e0f9?theme=light&version=v0.1&format=svg)
 
-## 2. Key Technical Features
+## <font color=red>2. Key Technical Features</font>
 
 ### 2.1 Performance Optimizations
 - **Redis Caching System**
@@ -83,7 +78,7 @@ The system implements a multi-agent architecture with the following key componen
   - Error reporting
   - Team collaboration
 
-## 3. Technical Advantages
+## <font color=red>3. Technical Advantages</font>
 
 ### 3.1 Scalability
 - Distributed architecture
@@ -109,7 +104,7 @@ The system implements a multi-agent architecture with the following key componen
 - Caching to reduce API calls
 - Efficient resource management
 
-## 4. Implementation Details
+## <font color=red>4. Implementation Details</font>
 
 ### 4.1 Backend (FastAPI)
 ```python
@@ -141,7 +136,7 @@ The system implements a multi-agent architecture with the following key componen
 - Competitor tracking
 ```
 
-## 5. Competitive Advantages
+## <font color=red>5. Competitive Advantages</font>
 
 1. **Cost Efficiency**
    - Free resource utilization
@@ -173,7 +168,7 @@ The system implements a multi-agent architecture with the following key componen
    - Vision capabilities
    - Resource validation
 
-## 6. Future Enhancements
+## <font color=red>6. Future Enhancements</font>
 
 1. **Additional Features**
    - More data sources
@@ -192,3 +187,4 @@ The system implements a multi-agent architecture with the following key componen
    - Additional data sources
    - Enhanced API support
    - Better resource management 
+
